@@ -1,0 +1,294 @@
+{
+  "name": "cold_emailing",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Email sender",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "company name"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        -16
+      ],
+      "id": "66810c22-3010-451a-bf6d-d5138c66ce7f",
+      "name": "On form submission",
+      "webhookId": "7b201df1-af22-4d4d-8984-c09b83fd30e7"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        208,
+        160
+      ],
+      "id": "d7140ef5-f4a1-433e-ab54-ef3b38849ecb",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "vtRZqpcgbja0wljj",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert professional email writer. Your task is to craft a professional, humanized, engaging, and impressive job application email for a data analyst position. The final email should feel like a genuine, personalized message, not a generic template.\n\nRules: \n- The output must be strictly in valid JSON format. \n- Represent the email in a tabular structure, with each field as a column: \"Field\" and \"Value.\" \n- Use three main fields: \"To,\" \"Subject,\" and \"Body.\" \n- The \"To\" field should directly use the form data placeholder: {{ $json['email'] }}. - The email body must include placeholders like {{ $json['company name'] }} impact, value. \n- Do not include any text outside the JSON. \n\nAdded the condition clearly inside the opening line section:\nAutomatically use either \"Dear Hiring Manager's\" if the name can be extracted from the email ID. otherwise, Dear Hiring Team.\nPlease review the following email and improve it by:\n1) Correcting capitalization, grammar, and proper nouns, use simple words only, hookup way. \n2) Rewriting awkward or unclear phrases to make them smooth and natural. \n3) Improving sentence flow by splitting long sentences or restructuring for readability. Tweaking phrasing to sound professional yet warm and approachable. \n4) Adding a small touch of personality or human tone without losing professionalism. Ensure the final email is polished, engaging, and easy to read.\n\nStructure (mandatory):\n{ \"table\": [ { \"Field\": \"To\", \"Value\": \"{{ $json['email'] }}\" }, { \"Field\": \"Subject\", \"Value\": \"Eye-catching yet professional subject line\" }, { \"Field\": \"Body\", \"Value\": \"Opening line → Warm, polite, and instantly engaging.\n\\n\\n otherwise Company admiration line → Show genuine admiration for {{ $json['company name'] }} and mention that the company is doing remarkable work in industry impact. \nwrite and express the interest as a fresher.\n\nAlso highlight that their strong commitment to value deeply resonates with me.\n\\n\\n Skills mentioned → Highlight my skills in Excel, MySQL, Power BI, Python, and n8n.\n\\n\\n Resume mention → Clearly state that I am attaching my resume for their kind consideration and include this resume link: https://drive.google.com/file/d/1QowlD8KVFZ3yn8cJff4jHCcBRQRReA3M/view?usp=sharing\\n\\n Closing line → Polite, humble, and motivating them to reply.\n\\n\\n Signature → Must be exactly:\n\\n Best,\n\\n S.V.Thejaswini,\\n svthejaswinivasu@gmail.com\\n\\n \nLinkedIn: https://www.linkedin.com/in/thejaswinisv/\\n\\n Portfolio website: https://codebasics.io/portfolio/Thejaswini\" } ] }\nThe final output should be a polished, engaging, and easy-to-read email that feels genuinely written for a specific company and in a hookup way, i want to get a reply.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        -16
+      ],
+      "id": "44c58653-c560-4fd3-ab3d-51299f139066",
+      "name": "agent ai"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email_id }}",
+        "subject": "={{ $json.sub }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1136,
+        -16
+      ],
+      "id": "b70f30aa-0b53-40ff-bdd1-c1853575f2e9",
+      "name": "email",
+      "webhookId": "282a54e3-6709-476e-8cb2-ad9c4f13fae4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Z1b5cpFRxvsbS5oW",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -16
+      ],
+      "id": "19e0868b-fe00-4663-8d35-862bb8e75792",
+      "name": "json into table data code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get raw string from previous node\nlet raw = $input.first().json.output;\n\n// Remove markdown fences (```json ... ```)\nraw = raw.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\n\n// Parse into object\nconst data = JSON.parse(raw);\n\n// Convert into dictionary {Field: Value}\nconst fields = {};\nfor (const item of data.table) {\n  fields[item.Field] = item.Value;\n}\n\n// Return in desired structure\nreturn {\n  email_id: fields[\"To\"],\n  sub: fields[\"Subject\"],\n  body: fields[\"Body\"]\n};\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        -16
+      ],
+      "id": "865f28b8-2362-4fc2-8007-efabf669ff99",
+      "name": "Extract Email Fields"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1f1pkEM6_uP-oBEv5l_u__R1mQmFRJ9uwWhP7g0CGhxY",
+          "mode": "list",
+          "cachedResultName": "email_writing",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1f1pkEM6_uP-oBEv5l_u__R1mQmFRJ9uwWhP7g0CGhxY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 902801710,
+          "mode": "list",
+          "cachedResultName": "n8n-sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1f1pkEM6_uP-oBEv5l_u__R1mQmFRJ9uwWhP7g0CGhxY/edit#gid=902801710"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "output"
+          ],
+          "schema": [
+            {
+              "id": "email_id",
+              "displayName": "email_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sub",
+              "displayName": "sub",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        912,
+        -16
+      ],
+      "id": "dbbe8f31-a425-4ffc-8a75-2636e16212e4",
+      "name": "adding and storing in gsheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "648IWiRL2stYonTp",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Automates sending personalized job application emails directly from form submissions.",
+        "height": 224,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "c625f860-52bf-4b0b-abe5-d18a3afbf622",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "agent ai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "agent ai",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agent ai": {
+      "main": [
+        [
+          {
+            "node": "json into table data code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "json into table data code": {
+      "main": [
+        [
+          {
+            "node": "Extract Email Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Email Fields": {
+      "main": [
+        [
+          {
+            "node": "adding and storing in gsheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "adding and storing in gsheet": {
+      "main": [
+        [
+          {
+            "node": "email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c63ebf63-ca13-418d-89d3-f6123f00c0e8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f8d4778395240b0dfa18719d2de7cebfe9338b6c20c67ba0c6da9cb0d520a57b"
+  },
+  "id": "kuLxO4uQzse8BuM7",
+  "tags": []
+}
